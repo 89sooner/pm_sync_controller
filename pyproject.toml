@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "fastapi_webhooks-app"
+version = "0.1.0"
+description = "A FastAPI application for webhooks push"
+authors = ["soonho.kim <soonho.kim@samsung.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.108.0"
+sqlalchemy = "^2.0.25"
+alembic = "^1.13.1"
+asyncpg = "^0.29.0"
+pydantic-settings = "^2.1.0"
+uvicorn = "^0.25.0"
+email-validator = "^2.1.0"
+bcrypt = "^4.0.1"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+httpx = "^0.28.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.4,<9.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

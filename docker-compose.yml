@@ -1,0 +1,15 @@
+services:
+  web:
+    build: .
+    container_name: pm_sync_controller
+    env_file:
+      - .env
+    network_mode: "host"
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - .:/app
+    command: sh -c "poetry run alembic upgrade head && poetry run uvicorn app:app --host 0.0.0.0 --port $${PORT}"
+
+volumes:
+  postgres_data:
