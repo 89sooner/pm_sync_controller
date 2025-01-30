@@ -2,7 +2,7 @@
 name = "fastapi_webhooks-app"
 version = "0.1.0"
 description = "A FastAPI application for webhooks push"
-authors = ["soonho.kim <soonho.kim@samsung.com>"]
+authors = ["89sooner <slrttt2001@naver.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.12"
