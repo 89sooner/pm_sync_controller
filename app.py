@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import asyncio
 from api.users import routers as users_routers
 from api.webhooks import routers as webhooks_routers
+from api.platform import routers as platform_routers
 from config.db import Base, engine
 from config.logging_config import logger
 
@@ -49,6 +50,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 # 라우터 등록
 app.include_router(users_routers.router, prefix="/api/v1")
 app.include_router(webhooks_routers.router, prefix="/api/v1")
+app.include_router(platform_routers.router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn
