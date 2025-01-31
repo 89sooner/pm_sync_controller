@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from . import services, schemas
 from config.db import get_db
+from scheduler.tasks import run_active_platforms_task
 
 router = APIRouter()
 
@@ -49,3 +50,18 @@ async def delete_platform(platform_id: int, db: AsyncSession = Depends(get_db)):
     if db_platform is None:
         raise HTTPException(status_code=404, detail="Platform not found")
     return {"message": "Platform deleted"}
+
+
+# 비상용 API
+@router.post("/run/{param}")
+async def run_active_platforms(param: str, db: AsyncSession = Depends(get_db)):
+    active_platforms = await services.get_platforms_active(db=db, skip=0, limit=100)
+    active_platform_names = [
+        platform.name for platform in active_platforms if platform.active
+    ]
+
+    if not active_platform_names:
+        raise HTTPException(status_code=404, detail="No active platforms found")
+
+    task_result = await run_active_platforms_task(active_platform_names, param)
+    return {"message": "Task executed", "result": task_result}

@@ -1,6 +1,5 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
 from . import models
 
@@ -15,6 +14,17 @@ async def create_platform(db: AsyncSession, platform):
 
 async def get_platforms(db: AsyncSession, skip: int = 0, limit: int = 100):
     query = select(models.Platform).offset(skip).limit(limit)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def get_platforms_active(db: AsyncSession, skip: int = 0, limit: int = 100):
+    query = (
+        select(models.Platform)
+        .where(models.Platform.active == True)
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(query)
     return result.scalars().all()
 

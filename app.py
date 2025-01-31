@@ -2,8 +2,10 @@
 # FastAPI 애플리케이션(라우터 포함) 초기화
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-import asyncio
+from scheduler.tasks import start_scheduler
+
 from api.users import routers as users_routers
 from api.webhooks import routers as webhooks_routers
 from api.platform import routers as platform_routers
@@ -11,6 +13,14 @@ from config.db import Base, engine
 from config.logging_config import logger
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # 비동기로 테이블 생성하는 함수
@@ -23,6 +33,7 @@ async def create_tables():
 @app.on_event("startup")
 async def startup_event():
     await create_tables()
+    await start_scheduler()
 
 
 # 요청 및 응답 로깅 미들웨어
@@ -48,8 +59,8 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
 
 # 라우터 등록
-app.include_router(users_routers.router, prefix="/api/v1")
-app.include_router(webhooks_routers.router, prefix="/api/v1")
+# app.include_router(users_routers.router, prefix="/api/v1")
+# app.include_router(webhooks_routers.router, prefix="/api/v1")
 app.include_router(platform_routers.router, prefix="/api/v1")
 
 if __name__ == "__main__":

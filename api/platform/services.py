@@ -2,6 +2,7 @@ from . import schemas
 from .repositories import (
     create_platform,
     get_platforms,
+    get_platforms_active,
     get_platform,
     update_platform,
     delete_platform,
@@ -14,6 +15,11 @@ async def create_new_platform(db, platform: schemas.PlatformCreate):
 
 async def get_platforms_list(db, skip: int = 0, limit: int = 100):
     return await get_platforms(db=db, skip=skip, limit=limit)
+
+
+async def get_active_platforms(db):
+    platforms = await get_platforms_active(db=db)
+    return [platform for platform in platforms if platform.active]
 
 
 async def get_platform_by_id(db, platform_id: int):

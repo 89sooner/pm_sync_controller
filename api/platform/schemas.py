@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal
+from typing import List, Literal
 
 
 class PlatformBase(BaseModel):
@@ -21,3 +21,8 @@ class Platform(PlatformBase):
 
     class Config:
         from_attributes = True
+
+
+class RunRequest(BaseModel):
+    names: List[str]
+    type: Literal["valid", "sync"]

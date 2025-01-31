@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "fastapi_webhooks-app"
+name = "platform-sync-controller"
 version = "0.1.0"
-description = "A FastAPI application for webhooks push"
+description = "A FastAPI application for platform sync controller"
 authors = ["89sooner <slrttt2001@naver.com>"]
 
 [tool.poetry.dependencies]
@@ -16,6 +16,7 @@ email-validator = "^2.1.0"
 bcrypt = "^4.0.1"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 httpx = "^0.28.0"
+apscheduler = "^3.9.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4,<9.0.0"
