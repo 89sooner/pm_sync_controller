@@ -22,6 +22,12 @@ async def read_platforms(
     return platforms
 
 
+@router.get("/platforms/active", response_model=list[schemas.Platform])
+async def get_active_platforms_list(db: AsyncSession = Depends(get_db)):
+    active_platforms = await services.get_active_platforms(db)
+    return active_platforms
+
+
 @router.get("/platforms/{platform_id}", response_model=schemas.Platform)
 async def read_platform(platform_id: int, db: AsyncSession = Depends(get_db)):
     db_platform = await services.get_platform_by_id(db=db, platform_id=platform_id)
@@ -54,31 +60,13 @@ async def delete_platform(platform_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/run/{param}")
 async def run_platforms(param: str, db: AsyncSession = Depends(get_db)):
-    """
-    플랫폼 동기화 또는 검증 작업을 실행합니다.
-
-    Args:
-        param: 실행할 작업 유형 (valid/sync)
-        db: 데이터베이스 세션
-    """
     if param not in ["valid", "sync"]:
         logger.error(f"Invalid parameter received: {param}")
         raise HTTPException(status_code=400, detail="Invalid parameter")
 
-    active_platforms = await services.get_active_platforms(db)
-
-    if not active_platforms:
-        logger.warning("No active platforms found")
-        raise HTTPException(status_code=404, detail="No active platforms found")
-
-    active_platform_names = [platform.name for platform in active_platforms]
-    logger.info(f"Executing {param} operation for platforms: {active_platform_names}")
-
-    # 실제 동기화/검증 로직 구현
-    result = await services.execute_platform_operation(db, active_platform_names, param)
+    result = await services.execute_platform_operation(param)
 
     return {
         "message": f"Task {param} executed successfully",
-        "platforms": active_platform_names,
         "result": result,
     }
