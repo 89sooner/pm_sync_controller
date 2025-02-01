@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     NODE_APP_NAME: str
     HOST_USER: str  # 호스트 머신의 사용자 이름
     HOST_WORKSPACE: str = "work"  # 작업 디렉토리 이름
+    NODE_APP_PORT: int
 
     @property
     def NODE_APP_DIR(self) -> str:

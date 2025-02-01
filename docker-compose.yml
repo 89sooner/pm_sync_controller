@@ -1,6 +1,6 @@
 # ./docker-compose.yml
 services:
-  web:
+  api:
     build: .
     container_name: pm_sync_controller
     env_file:

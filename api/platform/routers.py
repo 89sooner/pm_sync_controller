@@ -59,7 +59,7 @@ async def delete_platform(platform_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/run/{param}")
-async def run_platforms(param: str, db: AsyncSession = Depends(get_db)):
+async def run_platforms(param: str):
     if param not in ["valid", "sync"]:
         logger.error(f"Invalid parameter received: {param}")
         raise HTTPException(status_code=400, detail="Invalid parameter")
