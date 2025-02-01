@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from . import services, schemas
 from config.db import get_db
-from scheduler.tasks import run_active_platforms_task
+from config.logging_config import logger
 
 router = APIRouter()
 
@@ -52,16 +52,33 @@ async def delete_platform(platform_id: int, db: AsyncSession = Depends(get_db)):
     return {"message": "Platform deleted"}
 
 
-# 비상용 API
 @router.post("/run/{param}")
-async def run_active_platforms(param: str, db: AsyncSession = Depends(get_db)):
-    active_platforms = await services.get_platforms_active(db=db, skip=0, limit=100)
-    active_platform_names = [
-        platform.name for platform in active_platforms if platform.active
-    ]
+async def run_platforms(param: str, db: AsyncSession = Depends(get_db)):
+    """
+    플랫폼 동기화 또는 검증 작업을 실행합니다.
 
-    if not active_platform_names:
+    Args:
+        param: 실행할 작업 유형 (valid/sync)
+        db: 데이터베이스 세션
+    """
+    if param not in ["valid", "sync"]:
+        logger.error(f"Invalid parameter received: {param}")
+        raise HTTPException(status_code=400, detail="Invalid parameter")
+
+    active_platforms = await services.get_active_platforms(db)
+
+    if not active_platforms:
+        logger.warning("No active platforms found")
         raise HTTPException(status_code=404, detail="No active platforms found")
 
-    task_result = await run_active_platforms_task(active_platform_names, param)
-    return {"message": "Task executed", "result": task_result}
+    active_platform_names = [platform.name for platform in active_platforms]
+    logger.info(f"Executing {param} operation for platforms: {active_platform_names}")
+
+    # 실제 동기화/검증 로직 구현
+    result = await services.execute_platform_operation(db, active_platform_names, param)
+
+    return {
+        "message": f"Task {param} executed successfully",
+        "platforms": active_platform_names,
+        "result": result,
+    }
