@@ -60,6 +60,8 @@ async def execute_scheduled_task():
             # 내부 API 호출
             base_url = f"http://localhost:{settings.PORT}/api/v1"
             response = await client.post(f"{base_url}/run/valid")
+            # valid, sync 두 개의 API를 실행
+            # response = await client.post(f"{base_url}/run/sync")
 
             if response.status_code == 200:
                 logger.info("Scheduled platform task executed successfully")
