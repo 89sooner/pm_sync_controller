@@ -4,10 +4,6 @@ from config.logging_config import logger
 import httpx
 from config.settings import settings
 
-# from api.platform.services import get_platforms_active
-# from config.db import get_db
-# from contextlib import asynccontextmanager
-
 
 async def start_scheduler():
     """스케줄러 초기화 및 시작"""
@@ -36,26 +32,3 @@ async def execute_scheduled_task():
 
     except Exception as e:
         logger.error(f"Error in scheduled task execution: {str(e)}")
-
-
-# @asynccontextmanager
-# async def get_db_context():
-#     async for db in get_db():
-#         yield db
-
-
-# async def fetch_active_platforms():
-#     async with get_db_context() as db:
-#         active_platforms = await get_platforms_active(db)
-
-#         # 활성 플랫폼 로깅 추가
-#         logger.info("Fetched active platforms:")
-#         for platform in active_platforms:
-#             logger.info(
-#                 f"Platform ID: {platform.id}, Name: {platform.name}, Status: {platform.status}"
-#             )
-
-#         # 전체 활성 플랫폼 수 로깅
-#         logger.info(f"Total active platforms: {len(active_platforms)}")
-
-#         return active_platforms
