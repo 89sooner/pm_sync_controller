@@ -2,7 +2,7 @@
 # 웹훅 CRUD 동작 정의
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from .models import Webhook
+from .models import Webhooks
 from .schemas import WebhookPayload
 
 
@@ -19,7 +19,7 @@ async def save_webhook_data(db: AsyncSession, payload: WebhookPayload):
 
     webhook_dict = {"payload": payload_dict}  # payload 데이터를 JSON 형식으로 저장
 
-    db_webhook = Webhook(**webhook_dict)
+    db_webhook = Webhooks(**webhook_dict)
     db.add(db_webhook)
     await db.commit()
     await db.refresh(db_webhook)

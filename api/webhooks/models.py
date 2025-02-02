@@ -6,8 +6,8 @@ from datetime import datetime
 from config.db import Base
 
 
-class Webhook(Base):
-    __tablename__ = "message_push_db"
+class Webhooks(Base):
+    __tablename__ = "webhooks"
 
     id = Column(Integer, primary_key=True, index=True)
     payload = Column(JSON, nullable=False)
