@@ -39,6 +39,7 @@ async def remove_platform(db, platform_id: int):
     return await delete_platform(db=db, platform_id=platform_id)
 
 
+# 비상용 platfrom service 호출
 async def execute_platform_operation(operation_type: str):
     logger.info(f"Starting {operation_type} operation")
 
@@ -75,7 +76,7 @@ async def execute_platform_operation(operation_type: str):
                         detail=f"Platform service error: {error_message}",
                     )
 
-            except httpx.TimeoutError:
+            except httpx.ReadTimeout:
                 logger.error(f"Request to platform service timed out after 60 seconds")
                 raise HTTPException(
                     status_code=504, detail="Platform service request timed out"
