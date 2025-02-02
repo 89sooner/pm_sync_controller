@@ -17,7 +17,10 @@ if config.config_file_name is not None:
 
 from config.settings import settings
 from config.db import Base
-from api.users import models
+from api.users.models import User
+from api.webhooks.models import Webhooks
+from api.platform.models import Platform
+from api.scheduler_config.models import SchedulerConfig
 
 target_metadata = Base.metadata
 
