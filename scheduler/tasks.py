@@ -5,6 +5,8 @@ import asyncio
 from typing import Dict, List, Any
 from config.logging_config import logger
 from config.settings import settings
+from config.db import AsyncSessionLocal  # AsyncSessionLocal import 추가
+from api.scheduler_config import services, repositories  # repositories import 추가
 
 # 전역 변수로 스케줄러 객체 선언
 scheduler = AsyncIOScheduler()
@@ -88,37 +90,36 @@ async def call_platform_api(
 async def execute_scheduled_task():
     """스케줄러에 의해 실행되는 작업"""
     try:
-        async with httpx.AsyncClient() as client:
-            # 두 API를 동시에 호출
-            results = await asyncio.gather(
-                call_platform_api(client, "valid"),
-                call_platform_api(client, "sync"),
-                return_exceptions=True,
-            )
+        async with AsyncSessionLocal() as db:
+            valid_enabled = await services.is_task_enabled(db, "valid")
+            sync_enabled = await services.is_task_enabled(db, "sync")
 
-            # 결과 처리 및 로깅
-            for result in results:
-                if isinstance(result, Exception):
-                    logger.error(f"Task execution failed: {str(result)}")
-                elif result["status"] == "error":
-                    logger.error(
-                        f"{result['operation']} task failed: {result['error']}"
-                    )
-                else:
-                    logger.info(f"{result['operation']} task completed successfully")
+            tasks = []
+            async with httpx.AsyncClient() as client:
+                if valid_enabled:
+                    tasks.append(call_platform_api(client, "valid"))
+                if sync_enabled:
+                    tasks.append(call_platform_api(client, "sync"))
 
-            return {
-                "valid": (
-                    results[0]
-                    if not isinstance(results[0], Exception)
-                    else {"error": str(results[0])}
-                ),
-                "sync": (
-                    results[1]
-                    if not isinstance(results[1], Exception)
-                    else {"error": str(results[1])}
-                ),
-            }
+                if not tasks:
+                    logger.info("All scheduled tasks are disabled")
+                    return
+
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+
+                # 결과 처리 및 last_run 업데이트
+                for i, result in enumerate(results):
+                    task_type = "valid" if i == 0 and valid_enabled else "sync"
+                    if isinstance(result, Exception):
+                        logger.error(f"Task execution failed: {str(result)}")
+                    else:
+                        await repositories.update_last_run(db, task_type)
+                        logger.info(f"{task_type} task completed successfully")
+
+                return {
+                    "valid": results[0] if valid_enabled else {"status": "disabled"},
+                    "sync": results[-1] if sync_enabled else {"status": "disabled"},
+                }
 
     except Exception as e:
         logger.error(f"Error in scheduled task execution: {str(e)}")

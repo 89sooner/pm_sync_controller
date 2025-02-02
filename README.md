@@ -79,20 +79,64 @@ poetry install
 poetry lock
 ```
 
-3. Alembic 설정
+### Migrations 설정 및 관리
+
+1. Alembic 설치 및 초기화
 
 ```bash
 # Alembic 설치
 poetry add alembic
 
+# migrations 디렉토리 생성
+mkdir -p migrations/versions
+chmod -R 777 migrations/versions
+
 # 비동기 마이그레이션 초기화
 poetry run alembic init -t async migrations
-
-# 데이터베이스 마이그레이션 실행
-poetry run alembic upgrade head
 ```
 
-4. Git 원격 저장소 설정
+2. env.py 설정
+
+- migrations/env.py 파일에 모델 import 추가
+
+```python
+from config.settings import settings
+from config.db import Base
+from api.users import models
+from api.scheduler.models import SchedulerConfig  # 새로운 모델 추가 시 import 필요
+
+target_metadata = Base.metadata
+```
+
+3. 마이그레이션 파일 생성 및 적용
+
+```bash
+# 새로운 마이그레이션 파일 생성
+poetry run alembic revision --autogenerate -m "설명"
+
+# 마이그레이션 적용
+poetry run alembic upgrade head
+
+# 마이그레이션 롤백 (필요한 경우)
+poetry run alembic downgrade -1
+```
+
+4. 마이그레이션 히스토리 확인
+
+```bash
+# 현재 마이그레이션 상태 확인
+poetry run alembic current
+
+# 마이그레이션 히스토리 확인
+poetry run alembic history
+```
+
+5. 데이터 마이그레이션
+
+- 데이터 마이그레이션이 필요한 경우 별도의 스크립트 작성
+- migrations/versions 디렉토리에 데이터 마이그레이션 파일 추가
+
+### Git 원격 저장소 설정
 
 ```bash
 git remote rename origin old-origin
@@ -128,6 +172,8 @@ docker compose up -d --build
 
 ### Platform API
 
+platforms의 활성 상태에 따라 pm_apps 컨트롤
+
 - `POST /api/v1/platforms/`: 새로운 플랫폼 생성
 - `GET /api/v1/platforms/`: 전체 플랫폼 목록 조회
 - `GET /api/v1/platforms/active`: 활성 플랫폼 목록 조회
@@ -138,9 +184,18 @@ docker compose up -d --build
 
 ### Scheduler API
 
+fastapi scheduler의 컨트롤
+
+1. Scheduler 전체 제어
+2. Scheduler task_type에 따른 일부 제어 (schvalid/sync)
+
 - `POST /api/v1/scheduler/pause`: 스케줄러 일시 중지
 - `POST /api/v1/scheduler/resume`: 스케줄러 재개
 - `POST /api/v1/scheduler/stop`: 스케줄러 중지
+- `GET /api/v1/scheduler/config`: 스케줄러 task_type 설정 조회
+- `POST /api/v1/scheduler/config`: 스케줄러 task_type 설정 수정
+- `GET /api/v1/scheduler/config/{task_type}`: 특정 task_type 설정 조회
+- `PUT /api/v1/scheduler/config/{task_type}`: 특정 task_type 설정 수정
 
 ## 디렉토리 구조
 
@@ -155,13 +210,19 @@ platform-sync-controller/
 │   │   ├── routers.py    # API 라우팅
 │   │   ├── schemas.py    # Pydantic 스키마
 │   │   └── services.py   # 비즈니스 로직
+│   ├── scheduler_config/
+│   │   ├── __init__.py
+│   │   ├── models.py     # 데이터베이스 모델
+│   │   ├── repositories.py # 데이터 접근 계층
+│   │   ├── routers.py    # API 라우팅
+│   │   ├── schemas.py    # Pydantic 스키마
+│   │   └── services.py   # 비즈니스 로직
 ├── config/
 │   ├── db.py            # 데이터베이스 설정
 │   ├── logging_config.py # 로깅 설정
 │   └── settings.py      # 환경 설정
 ├── scheduler/
-│   ├── tasks.py         # 스케줄러 작업
-│   └── routers.py       # 스케줄러 API
+│   └── tasks.py       # 스케줄러 작업
 └── migrations/          # Alembic 마이그레이션
 ```
 
@@ -178,6 +239,13 @@ fastapi_webhooks-app/
 │   │   ├── routers.py    # API 라우팅
 │   │   ├── schemas.py    # Pydantic 스키마
 │   │   └── services.py   # 비즈니스 로직
+│   ├── scheduler_config/
+│   │   ├── __init__.py
+│   │   ├── models.py     # 데이터베이스 모델
+│   │   ├── repositories.py # 데이터 접근 계층
+│   │   ├── routers.py    # API 라우팅
+│   │   ├── schemas.py    # Pydantic 스키마
+│   │   └── services.py   # 비즈니스 로직
 ├── config/
 │   ├── __init__.py
 │   ├── db.py            # 데이터베이스 설정
@@ -185,9 +253,9 @@ fastapi_webhooks-app/
 │   └── settings.py      # 환경 설정
 ├── scheduler/
 │   ├── __init__.py
-│   ├── tasks.py         # 스케줄러 작업
-│   └── routers.py       # 스케줄러 API
+│   └── tasks.py       # 스케줄러 작업
 ├── migrations/          # Alembic 마이그레이션
+│   ├── versions/
 │   ├── README
 │   ├── env.py
 │   ├── script.py.mako
@@ -236,16 +304,94 @@ fastapi_webhooks-app/
    - PostgreSQL 서비스 상태 확인
    - 데이터베이스 마이그레이션 상태 확인
 
-2. 스케줄러 문제
+2. 마이그레이션 문제
+
+   - migrations/versions 디렉토리 권한 확인
+   - 모델 import 확인
+   - alembic.ini 설정 확인
+   - 마이그레이션 히스토리 검토
+
+3. HTTP 클라이언트 (httpx) 관련 문제
+
+   - TimeoutError 사용 시 주의사항:
+
+     ```python
+     # 잘못된 사용
+     except httpx.TimeoutError:
+         pass
+
+     # 올바른 사용
+     except httpx.ReadTimeout:
+         pass
+     ```
+
+   - 타임아웃 설정:
+     ```python
+     async with httpx.AsyncClient() as client:
+         response = await client.get(url, timeout=60.0)
+     ```
+   - 에러 처리 모범 사례:
+     ```python
+     try:
+         async with httpx.AsyncClient() as client:
+             response = await client.get(url, timeout=60.0)
+     except httpx.ReadTimeout:
+         raise HTTPException(status_code=504, detail="Request timed out")
+     except httpx.RequestError as e:
+         raise HTTPException(status_code=503, detail=str(e))
+     ```
+
+4. 스케줄러 문제
 
    - 스케줄러 상태 확인
    - 작업 실행 로그 검토
    - Node.js 플랫폼 서비스 연결 상태 확인
 
-3. API 오류
+5. SQLAlchemy 관련 문제
+
+   - func 사용 시 import 확인:
+
+     ```python
+     from sqlalchemy import func  # 필수 import
+
+     # 올바른 사용
+     config.last_run = func.now()
+     ```
+
+   - 세션 관리 주의사항:
+     ```python
+     async with AsyncSessionLocal() as db:
+         try:
+             # 데이터베이스 작업 수행
+             await db.commit()
+         except Exception:
+             await db.rollback()
+             raise
+     ```
+
+6. API 오류
    - 요청/응답 로그 확인
    - 에러 메시지 상세 분석
    - 미들웨어 설정 검토
+
+## 개발 시 주의사항
+
+1. HTTP 클라이언트 사용
+
+   - httpx 라이브러리 사용 시 적절한 예외 처리
+   - 타임아웃 설정 필수
+   - 비동기 컨텍스트 매니저 활용
+
+2. 데이터베이스 작업
+
+   - SQLAlchemy 함수 및 유틸리티 올바른 import
+   - 트랜잭션 관리 및 세션 처리
+   - 비동기 작업 시 적절한 에러 처리
+
+3. 스케줄러 작업
+   - 작업 상태 모니터링
+   - 적절한 로깅 설정
+   - 오류 발생 시 재시도 메커니즘
 
 ## 라이선스
 
