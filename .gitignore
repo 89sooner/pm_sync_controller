@@ -179,3 +179,4 @@ pyrightconfig.json
 postgres_data/
 migrations/versions/*.py
 *.swp*
+.idea/
