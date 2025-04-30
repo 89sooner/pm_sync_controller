@@ -273,6 +273,140 @@ fastapi_webhooks-app/
 └── pyproject.toml
 ```
 
+### 플로우
+
+https://www.mermaidchart.com/
+![alt text](image.png)
+
+```mermaid
+flowchart TD
+  %% 중앙 데이터베이스 노드
+  Postgres[(PostgreSQL DB)]
+
+  subgraph Data_Collection [데이터 수집]
+    GMail[Gmail] -->|예약 메일| SlackInbound[Slack]
+    SlackInbound --> SlackCollector[Slack Collector]
+    subgraph SlackCollector [Slack Collector]
+      direction TB
+      SlackProc[수집 및 처리]
+      subgraph Parsers [파서]
+        YanoljaParser[야놀자 파서]
+        YeogiParser[여기어때 파서]
+        AirbnbParser[에어비앤비 파서]
+        NaverParser[네이버 파서]
+      end
+      SlackProc -->|병렬 처리| YanoljaParser
+      SlackProc -->|병렬 처리| YeogiParser
+      SlackProc -->|병렬 처리| AirbnbParser
+      SlackProc -->|병렬 처리| NaverParser
+    end
+    YanoljaParser -->|파싱된 예약 정보| Postgres
+    YeogiParser -->|파싱된 예약 정보| Postgres
+    AirbnbParser -->|파싱된 예약 정보| Postgres
+    NaverParser -->|파싱된 예약 정보| Postgres
+    Postgres -->|새 예약 알림 조회| TelBot[Telegram Sender]
+    TelBot -->|알림 발송 후 기록| Postgres
+  end
+
+  subgraph Web_App [웹 애플리케이션]
+    Nginx[Nginx]
+    subgraph Frontend [프론트엔드]
+      React[React]
+    end
+    subgraph Backend [백엔드]
+      NodejsWeb[Node.js]
+      NodejsWeb -->|사용자 설정 CRUD| Postgres
+    end
+    Nginx --> Frontend
+    Frontend -->|API 요청| Backend
+    Backend -->|API 응답| Frontend
+  end
+
+  subgraph FastAPI_Controller [Platform Sync Controller]
+    direction TB
+    FastAPIApp[FastAPI App<br/>]
+    Scheduler[APScheduler<br/>스케줄러]
+    PlatformAPI[플랫폼 관리 API]
+    SchedulerAPI[스케줄러 관리 API]
+    FastAPIApp --> PlatformAPI
+    FastAPIApp --> SchedulerAPI
+    PlatformAPI -- CRUD --> Postgres
+    SchedulerAPI -- 설정/상태 --> Postgres
+    Scheduler -- 작업 상태/로그 --> Postgres
+    Scheduler -- 플랫폼 동기화/검증 요청 --> pm_apps
+    SchedulerAPI -- 스케줄러 제어 --> Scheduler
+  end
+
+  %% FastAPI와 pm_apps 동기화 엔진 연결
+  FastAPIApp -- HTTP 요청 (valid/sync) --> pm_apps
+
+  %% FastAPI와 Web_App(React) 연결
+  Frontend -- REST API 호출 --> FastAPIApp
+
+  %% FastAPI와 Data_Collection 연동(웹훅 등)
+
+  %% DB 공유 명시
+  FastAPIApp -- ORM/SQLAlchemy --> Postgres
+
+  %% 추가: 통합 동기화 흐름
+  %% 1. 외부 플랫폼에서 예약 발생
+  subgraph 외부_플랫폼_통합
+    A_Airbnb[에어비앤비]
+    A_Naver[네이버]
+    A_Yeogi[여기어때]
+    A_Yanolja[야놀자]
+  end
+
+  %% 2. 예약 데이터 수집
+  subgraph 예약_수집_통합
+    Playwright[Playwright 크롤러]
+    ValidApp[valid-app<br/>예약 검증]
+  end
+
+  %% 3. 예약 데이터 표준화 및 검증
+  subgraph 예약_검증_표준화_통합
+    ValidService[Valid Service<br/>표준화/검증]
+    SharedUtils[공통 유틸/설정]
+  end
+
+  %% 4. 데이터 저장 및 동기화
+  subgraph 데이터_저장_동기화_통합
+    Postgres
+    SyncApp[sync-app<br/>동기화]
+    SyncService[Sync Service]
+  end
+
+  %% 5. API 서비스 및 외부 연동
+  subgraph API_외부연동_통합
+    PlatformService[platform-service<br/>Express.js API]
+    FastAPI_통합[FastAPI<br/>외부 연동]
+    WebApp_통합[웹앱/프론트엔드]
+  end
+
+  %% 흐름 연결 (통합)
+  A_Airbnb -- 예약/변경/취소 --> Playwright
+  A_Naver -- 예약/변경/취소 --> Playwright
+  A_Yeogi -- 예약/변경/취소 --> Playwright
+  A_Yanolja -- 예약/변경/취소 --> Playwright
+
+  Playwright -- 예약 데이터 수집 --> ValidApp
+  ValidApp -- 예약 데이터 전달 --> ValidService
+  ValidService -- 표준화/검증 --> SharedUtils
+  ValidService -- 표준화된 예약 데이터 --> Postgres
+
+  Postgres -- 예약 데이터 조회/저장 --> SyncApp
+  SyncApp -- 동기화 요청 --> SyncService
+  SyncService -- 상태/재고 업데이트 --> Postgres
+
+  Postgres -- 예약 데이터 제공 --> PlatformService
+  PlatformService -- REST API --> WebApp_통합
+  PlatformService -- 예약 데이터/상태 제공 --> FastAPI_통합
+
+  FastAPI_통합 -- 외부 시스템 연동/스케줄러 --> PlatformService
+
+  WebApp_통합 -- 사용자 요청/조회 --> PlatformService
+```
+
 ## 확장 및 커스터마이징
 
 1. 새로운 플랫폼 추가
