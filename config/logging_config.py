@@ -3,8 +3,30 @@ import logging.config
 import sys
 from pathlib import Path
 from typing import Dict, Any
+import json
 
 from .settings import settings
+
+
+class JsonFormatter(logging.Formatter):
+    """JSON 형태로 로그를 포맷하는 커스텀 포맷터"""
+
+    def format(self, record):
+        log_obj = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+
+        # 예외 정보가 있다면 추가
+        if record.exc_info:
+            log_obj["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_obj, ensure_ascii=False)
 
 
 def setup_logging() -> logging.Logger:
@@ -66,7 +88,7 @@ def setup_logging() -> logging.Logger:
         logging_config["handlers"]["file"] = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
-            "formatter": "json",
+            "formatter": "json",  # JSON 포맷터 사용
             "filename": str(log_file_path),
             "maxBytes": 10485760,  # 10MB
             "backupCount": 5,
