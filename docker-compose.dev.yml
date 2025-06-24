@@ -1,0 +1,21 @@
+services:
+  api:
+    build: .
+    container_name: pm_sync_controller_dev
+    env_file:
+      - .env.dev
+    network_mode: "host"
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - .:/app
+      - /home/${HOST_USER}/${HOST_WORKSPACE}/pension_manager:/home/${HOST_USER}/${HOST_WORKSPACE}/pension_manager
+    command:
+      - sh
+      - -c
+      - |
+        poetry run alembic upgrade head \
+        && poetry run uvicorn app:app \
+          --host 0.0.0.0 \
+          --port $${PORT} \
+          --reload

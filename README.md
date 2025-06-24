@@ -164,6 +164,14 @@ docker compose up -d --build
 
 ```bash
 ./run_app.sh
+
+Usage: ./run_app.sh [environment]
+  environment: dev (default) | prod
+Examples:
+  ./run_app.sh        # Run in development mode
+  ./run_app.sh dev    # Run in development mode
+  ./run_app.sh prod   # Run in production mode
+
 ```
 
 실행 후 `http://localhost:8080/docs`에서 API 문서를 확인할 수 있습니다.
@@ -260,12 +268,14 @@ fastapi_webhooks-app/
 │   ├── env.py
 │   ├── script.py.mako
 │   └── versions
-├── .env
+├── .env.dev
+├── .env.prod
 ├── .env.sample
 ├── .gitignore
 ├── alembic.ini
 ├── app.py
-├── docker-compose.yml
+├── docker-compose.dev.yml
+├── docker-compose.prod.yml
 ├── Dockerfile
 ├── poetry.lock
 ├── README.md
