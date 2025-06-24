@@ -168,6 +168,7 @@ docker compose up -d --build
 Usage: ./run_app.sh [environment]
   environment: dev (default) | prod
 Examples:
+  ./run_app.sh --help
   ./run_app.sh        # Run in development mode
   ./run_app.sh dev    # Run in development mode
   ./run_app.sh prod   # Run in production mode
